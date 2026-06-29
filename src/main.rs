@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use dbus::{Connection, PRINT};
+use dbus::{Connection, PRINT, message::*};
 
 fn main() {
     let dbus_session_bus_address =
@@ -11,10 +11,13 @@ fn main() {
     } else {
         panic!("unknown format for DBUS_SESSION_BUS_ADDRESS");
     };
-    let connection =
+    let mut connection =
         Connection::init(path).expect("failed to initialize connection to dbus session bus");
 
     if crate::PRINT {
         println!("Connection established to {}", connection.server_guid());
     }
+
+    let message = connection.read_message().unwrap();
+    println!("message: {:?}", &message);
 }

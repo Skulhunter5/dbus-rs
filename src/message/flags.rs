@@ -1,11 +1,19 @@
-use crate::Connection;
+use crate::message::{MessageReader, MessageWriter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Flags(u8);
 
 impl Flags {
-    pub(crate) fn read_from(connection: &mut Connection) -> std::io::Result<Self> {
-        connection.read_u8().map(|byte| Self::from(byte))
+    pub(crate) fn read_from(reader: &mut MessageReader<impl std::io::Read>) -> std::io::Result<Self> {
+        reader.read_u8().map(|byte| Self::from(byte))
+    }
+
+    pub(crate) fn write_to(&self, writer: &mut MessageWriter<impl std::io::Write>) -> std::io::Result<()> {
+        writer.write_u8(self.0)
+    }
+
+    pub fn none() -> Self {
+        Self(0)
     }
 
     pub fn no_reply_expected(&self) -> bool {

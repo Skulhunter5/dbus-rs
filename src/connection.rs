@@ -4,9 +4,10 @@ use std::{
     path::Path,
 };
 
-use byteorder::{ByteOrder, ReadBytesExt as _};
-
-use crate::{PRINT_HANDSHAKE, message::Message};
+use crate::{
+    PRINT_HANDSHAKE,
+    message::{Message, MessageReader, MessageWriter},
+};
 
 #[derive(Debug)]
 pub struct Connection {
@@ -111,15 +112,11 @@ impl Connection {
         self.server_guid.as_str()
     }
 
-    pub(crate) fn read_u8(&mut self) -> std::io::Result<u8> {
-        self.stream.read_u8()
-    }
-
-    pub(crate) fn read_u32<T: ByteOrder>(&mut self) -> std::io::Result<u32> {
-        self.stream.read_u32::<T>()
-    }
-
     pub fn read_message(&mut self) -> std::io::Result<Message> {
-        Message::read_from(self)
+        Message::read_from(MessageReader::new(&mut self.stream))
+    }
+
+    pub fn write_message(&mut self, message: &Message) -> std::io::Result<()> {
+        message.write_to(MessageWriter::new(&mut self.stream))
     }
 }
