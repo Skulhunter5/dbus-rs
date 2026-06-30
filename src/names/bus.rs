@@ -1,9 +1,9 @@
-use crate::names::MAX_NAME_LENGTH;
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BusName(String);
 
 impl BusName {
+    pub const MAX_LENGTH: usize = super::MAX_LENGTH;
+
     pub fn new(name: impl Into<String>) -> Option<Self> {
         let name = name.into();
         Self::validate(&name).then_some(Self(name))
@@ -14,7 +14,7 @@ impl BusName {
     }
 
     fn validate(name: &str) -> bool {
-        if name.len() > MAX_NAME_LENGTH {
+        if name.len() > Self::MAX_LENGTH {
             return false;
         }
 
@@ -28,11 +28,27 @@ impl BusName {
             super::validate(name, '.', 2, false, Self::validate_element_char)
         }
     }
+
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl AsRef<str> for BusName {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl From<BusName> for String {
+    fn from(value: BusName) -> Self {
+        value.0
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::names::{BusName, MAX_NAME_LENGTH};
+    use crate::names::BusName;
 
     #[test]
     fn unique() {
@@ -62,16 +78,16 @@ mod test {
     #[test]
     fn unique_max_length() {
         let mut name_string = String::from(":1.0.");
-        name_string.push_str("2".repeat(MAX_NAME_LENGTH - name_string.len()).as_str());
-        assert!(name_string.len() == MAX_NAME_LENGTH);
+        name_string.push_str("2".repeat(BusName::MAX_LENGTH - name_string.len()).as_str());
+        assert!(name_string.len() == BusName::MAX_LENGTH);
         assert!(BusName::new(name_string).is_some());
     }
 
     #[test]
     fn well_known_max_length() {
         let mut name_string = String::from("org.freedesktop.");
-        name_string.push_str("a".repeat(MAX_NAME_LENGTH - name_string.len()).as_str());
-        assert!(name_string.len() == MAX_NAME_LENGTH);
+        name_string.push_str("a".repeat(BusName::MAX_LENGTH - name_string.len()).as_str());
+        assert!(name_string.len() == BusName::MAX_LENGTH);
         assert!(BusName::new(name_string).is_some());
     }
 
@@ -88,16 +104,22 @@ mod test {
     #[test]
     fn unique_too_long() {
         let mut name_string = String::from(":1.0.");
-        name_string.push_str("2".repeat(MAX_NAME_LENGTH - name_string.len() + 1).as_str());
-        assert!(name_string.len() > MAX_NAME_LENGTH);
+        name_string.push_str(
+            "2".repeat(BusName::MAX_LENGTH - name_string.len() + 1)
+                .as_str(),
+        );
+        assert!(name_string.len() > BusName::MAX_LENGTH);
         assert!(BusName::new(name_string).is_none());
     }
 
     #[test]
     fn well_known_too_long() {
         let mut name_string = String::from("org.freedesktop.");
-        name_string.push_str("a".repeat(MAX_NAME_LENGTH - name_string.len() + 1).as_str());
-        assert!(name_string.len() > MAX_NAME_LENGTH);
+        name_string.push_str(
+            "a".repeat(BusName::MAX_LENGTH - name_string.len() + 1)
+                .as_str(),
+        );
+        assert!(name_string.len() > BusName::MAX_LENGTH);
         assert!(BusName::new(name_string).is_none());
     }
 

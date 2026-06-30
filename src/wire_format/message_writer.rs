@@ -2,7 +2,7 @@ use std::{io::Write, os::unix::net::UnixStream};
 
 use byteorder::{ByteOrder, WriteBytesExt as _};
 
-use crate::wire_format::WireFormatType;
+use crate::wire_format::{StringLengthType, WireFormatType};
 
 #[derive(Debug)]
 pub struct MessageWriter<'a, W: Write> {
@@ -45,13 +45,6 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         self.align_to(8)?;
         self.stream.write_all(body)?;
         self.offset += body.len();
-        Ok(())
-    }
-
-    fn write_bytes(&mut self, bytes: impl AsRef<[u8]>) -> std::io::Result<()> {
-        let bytes = bytes.as_ref();
-        self.stream.write_all(bytes)?;
-        self.offset += bytes.len();
         Ok(())
     }
 
@@ -113,10 +106,25 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         Ok(())
     }
 
+    pub(super) fn write_string<T: ByteOrder, L: StringLengthType>(
+        &mut self,
+        string: impl AsRef<str>,
+    ) -> std::io::Result<()> {
+        let string = string.as_ref();
+
+        self.write_u32::<T>(string.len() as u32)?;
+        self.write_bytes(string.as_bytes())?;
+        self.write_byte(b'\0')?;
+
+        Ok(())
+    }
+
     pub fn write_array<T: ByteOrder, E: WireFormatType>(
         &mut self,
-        array: &[E],
+        array: impl AsRef<[E]>,
     ) -> std::io::Result<()> {
+        let array = array.as_ref();
+
         // TODO: replace the mess of having to write the "header" (i.e. length + element padding) to
         // array_buffer. it should probably be possible to just set array_writer.offset to something
         // different so that it still ensures the correct alignment when writing to the
@@ -162,5 +170,12 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         self.write_bytes(array_bytes)?;
 
         todo!();
+    }
+
+    fn write_bytes(&mut self, bytes: impl AsRef<[u8]>) -> std::io::Result<()> {
+        let bytes = bytes.as_ref();
+        self.stream.write_all(bytes)?;
+        self.offset += bytes.len();
+        Ok(())
     }
 }

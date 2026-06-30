@@ -2,7 +2,7 @@ use std::{io::Read, os::unix::net::UnixStream};
 
 use byteorder::{ByteOrder, ReadBytesExt as _};
 
-use crate::wire_format::WireFormatType;
+use crate::wire_format::{StringLengthType, WireFormatType};
 
 #[derive(Debug)]
 pub struct MessageReader<'a, R: Read> {
@@ -114,6 +114,24 @@ impl<'a, R: Read> MessageReader<'a, R> {
         Ok(res)
     }
 
+    pub(super) fn read_string<T: ByteOrder, L: StringLengthType>(
+        &mut self,
+    ) -> std::io::Result<String> {
+        let length = self.read::<T, L>()?.to_usize();
+        let bytes = self.read_bytes(length)?;
+        let string = String::from_utf8(bytes).map_err(|_| {
+            std::io::Error::new(std::io::ErrorKind::InvalidData, "not a valid utf8 string")
+        })?;
+        let null_byte = self.read_byte()?;
+        if null_byte != 0 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "missing null byte at the end of string",
+            ));
+        }
+        Ok(string)
+    }
+
     pub(super) fn read_array<T: ByteOrder, E: WireFormatType>(
         &mut self,
     ) -> std::io::Result<Vec<E>> {
@@ -141,5 +159,12 @@ impl<'a, R: Read> MessageReader<'a, R> {
         }
 
         Ok(array)
+    }
+
+    fn read_bytes(&mut self, count: usize) -> std::io::Result<Vec<u8>> {
+        let mut bytes = vec![0u8; count];
+        self.stream.read_exact(&mut bytes)?;
+        self.offset += bytes.len();
+        Ok(bytes)
     }
 }

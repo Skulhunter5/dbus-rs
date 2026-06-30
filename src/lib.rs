@@ -1,6 +1,7 @@
 mod connection;
 pub mod message;
 mod names;
+pub mod types;
 pub mod wire_format;
 pub use connection::Connection;
 pub use names::{BusName, ErrorName, InterfaceName, MemberName};

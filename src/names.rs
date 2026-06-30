@@ -7,7 +7,7 @@ pub use error::ErrorName;
 pub use interface::InterfaceName;
 pub use member::MemberName;
 
-const MAX_NAME_LENGTH: usize = 255;
+pub const MAX_LENGTH: usize = 255;
 
 fn validate(
     name: &str,
@@ -16,7 +16,7 @@ fn validate(
     elements_can_start_with_digit: bool,
     validate_element_char: fn(&char) -> bool,
 ) -> bool {
-    if name.len() > MAX_NAME_LENGTH {
+    if name.len() > MAX_LENGTH {
         return false;
     }
 

@@ -1,9 +1,9 @@
-use crate::names::MAX_NAME_LENGTH;
-
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MemberName(String);
 
 impl MemberName {
+    pub const MAX_LENGTH: usize = super::MAX_LENGTH;
+
     pub fn new(name: impl Into<String>) -> Option<Self> {
         let name = name.into();
         Self::validate(&name).then_some(Self(name))
@@ -14,16 +14,32 @@ impl MemberName {
     }
 
     fn validate(name: &str) -> bool {
-        if name.is_empty() || name.len() > MAX_NAME_LENGTH {
+        if name.is_empty() || name.len() > Self::MAX_LENGTH {
             return false;
         }
         super::validate_element(name, false, Self::validate_element_char)
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl AsRef<str> for MemberName {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl From<MemberName> for String {
+    fn from(value: MemberName) -> Self {
+        value.0
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::names::{MAX_NAME_LENGTH, MemberName};
+    use crate::names::MemberName;
 
     #[test]
     fn valid_1() {
@@ -42,7 +58,7 @@ mod test {
 
     #[test]
     fn max_length() {
-        assert!(MemberName::new("a".repeat(MAX_NAME_LENGTH)).is_some());
+        assert!(MemberName::new("a".repeat(MemberName::MAX_LENGTH)).is_some());
     }
 
     #[test]
@@ -52,7 +68,7 @@ mod test {
 
     #[test]
     fn too_long() {
-        assert!(MemberName::new("a".repeat(MAX_NAME_LENGTH + 1)).is_none());
+        assert!(MemberName::new("a".repeat(MemberName::MAX_LENGTH + 1)).is_none());
     }
 
     #[test]
