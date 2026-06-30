@@ -210,8 +210,24 @@ impl<E: WireFormatType> WireFormatType for &[E] {
     }
 }
 
+impl WireFormatType for String {
+    // because strings start with a u32 for the length
+    const ALIGNMENT: usize = std::mem::size_of::<u32>();
+
+    fn read_from<T: ByteOrder, R: Read>(reader: &mut MessageReader<R>) -> std::io::Result<Self> {
+        reader.read_string::<T, u32>()
+    }
+
+    fn write_to<T: ByteOrder, W: Write>(
+        &self,
+        writer: &mut MessageWriter<W>,
+    ) -> std::io::Result<()> {
+        writer.write_string::<T, u32>(self)
+    }
+}
+
 impl WireFormatType for Signature {
-    // because signatures always start with a u8 for the length
+    // because signatures start with a u8 for the length
     const ALIGNMENT: usize = std::mem::size_of::<u8>();
 
     fn read_from<T: ByteOrder, R: Read>(reader: &mut MessageReader<R>) -> std::io::Result<Self> {
