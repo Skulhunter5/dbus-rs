@@ -6,8 +6,8 @@ use crate::wire_format::WireFormatType;
 
 #[derive(Debug)]
 pub struct MessageWriter<'a, W: Write> {
-    stream: &'a mut W,
-    offset: usize,
+    pub(super) stream: &'a mut W,
+    pub(super) offset: usize,
 }
 
 impl<'a> MessageWriter<'a, UnixStream> {
@@ -33,6 +33,21 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         self.offset.is_multiple_of(alignment)
     }
 
+    pub fn write_byte(&mut self, value: u8) -> std::io::Result<()> {
+        self.write_u8(value)
+    }
+
+    pub fn write<T: ByteOrder, E: WireFormatType>(&mut self, value: E) -> std::io::Result<()> {
+        value.write_to::<T, _>(self)
+    }
+
+    pub fn write_body(mut self, body: &[u8]) -> std::io::Result<()> {
+        self.align_to(8)?;
+        self.stream.write_all(body)?;
+        self.offset += body.len();
+        Ok(())
+    }
+
     fn write_bytes(&mut self, bytes: impl AsRef<[u8]>) -> std::io::Result<()> {
         let bytes = bytes.as_ref();
         self.stream.write_all(bytes)?;
@@ -40,13 +55,33 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         Ok(())
     }
 
-    pub fn write_u8(&mut self, value: u8) -> std::io::Result<()> {
+    pub(super) fn write_bool<T: ByteOrder>(&mut self, value: bool) -> std::io::Result<()> {
+        self.write_u32::<T>(value as u32)
+    }
+
+    pub(super) fn write_u8(&mut self, value: u8) -> std::io::Result<()> {
         self.stream.write_u8(value)?;
         self.offset += 1;
         Ok(())
     }
 
-    pub fn write_u32<T: ByteOrder>(&mut self, value: u32) -> std::io::Result<()> {
+    pub(super) fn write_u16<T: ByteOrder>(&mut self, value: u16) -> std::io::Result<()> {
+        const BYTES: usize = std::mem::size_of::<u16>();
+        self.align_to(BYTES)?;
+        self.stream.write_u16::<T>(value)?;
+        self.offset += BYTES;
+        Ok(())
+    }
+
+    pub(super) fn write_i16<T: ByteOrder>(&mut self, value: i16) -> std::io::Result<()> {
+        const BYTES: usize = std::mem::size_of::<i16>();
+        self.align_to(BYTES)?;
+        self.stream.write_i16::<T>(value)?;
+        self.offset += BYTES;
+        Ok(())
+    }
+
+    pub(super) fn write_u32<T: ByteOrder>(&mut self, value: u32) -> std::io::Result<()> {
         const BYTES: usize = std::mem::size_of::<u32>();
         self.align_to(BYTES)?;
         self.stream.write_u32::<T>(value)?;
@@ -54,10 +89,27 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         Ok(())
     }
 
-    pub fn write_body(mut self, body: &[u8]) -> std::io::Result<()> {
-        self.align_to(8)?;
-        self.stream.write_all(body)?;
-        self.offset += body.len();
+    pub(super) fn write_i32<T: ByteOrder>(&mut self, value: i32) -> std::io::Result<()> {
+        const BYTES: usize = std::mem::size_of::<i32>();
+        self.align_to(BYTES)?;
+        self.stream.write_i32::<T>(value)?;
+        self.offset += BYTES;
+        Ok(())
+    }
+
+    pub(super) fn write_u64<T: ByteOrder>(&mut self, value: u64) -> std::io::Result<()> {
+        const BYTES: usize = std::mem::size_of::<u64>();
+        self.align_to(BYTES)?;
+        self.stream.write_u64::<T>(value)?;
+        self.offset += BYTES;
+        Ok(())
+    }
+
+    pub(super) fn write_i64<T: ByteOrder>(&mut self, value: i64) -> std::io::Result<()> {
+        const BYTES: usize = std::mem::size_of::<i64>();
+        self.align_to(BYTES)?;
+        self.stream.write_i64::<T>(value)?;
+        self.offset += BYTES;
         Ok(())
     }
 
@@ -99,7 +151,7 @@ impl<'a, W: Write> MessageWriter<'a, W> {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 format!(
-                    "array (len: {}) exceeding max allowed length of 2^26 bytes",
+                    "array (len: {}) exceeding max allowed length of 2^26 bytes (64 MiB)",
                     array_bytes.len()
                 ),
             ));

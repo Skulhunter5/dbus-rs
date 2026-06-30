@@ -4,42 +4,18 @@ use byteorder::{BigEndian, ByteOrder, LittleEndian};
 
 mod endianness;
 mod flags;
+mod header_field;
 mod message_type;
 mod protocol_version;
-mod reader;
-mod writer;
 pub use endianness::Endianness;
 pub use flags::Flags;
+pub use header_field::HeaderField;
 pub use message_type::MessageType;
 pub use protocol_version::MajorProtocolVersion;
-pub(crate) use reader::MessageReader;
-pub(crate) use writer::MessageWriter;
 
-use crate::wire_format::WireFormatType;
+use crate::wire_format::{MessageReader, MessageWriter};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct HeaderField {
-    code: u8,
-}
-
-impl WireFormatType for HeaderField {
-    const ALIGNMENT: usize = 8;
-
-    fn read_from<T: ByteOrder, R: std::io::Read>(
-        reader: &mut MessageReader<R>,
-    ) -> std::io::Result<Self> {
-        reader.align_to(Self::ALIGNMENT)?;
-        todo!()
-    }
-
-    fn write_to<T: ByteOrder, W: Write>(
-        &self,
-        writer: &mut MessageWriter<W>,
-    ) -> std::io::Result<()> {
-        writer.align_to(Self::ALIGNMENT)?;
-        todo!();
-    }
-}
+// TODO: add proper validation for header_fields, ensuring they are correct for the MessageType
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Message {
@@ -48,28 +24,28 @@ pub struct Message {
     flags: Flags,
     major_protocol_version: MajorProtocolVersion,
     serial: u32,
-    fields: Vec<HeaderField>,
+    header_fields: Vec<HeaderField>,
     body: Vec<u8>,
 }
 
 impl Message {
     pub(crate) fn read_from(mut reader: MessageReader<impl Read>) -> std::io::Result<Self> {
-        let endianness = Endianness::read_from(&mut reader)?;
-        let ty = MessageType::read_from(&mut reader)?;
-        let flags = Flags::read_from(&mut reader)?;
-        let major_protocol_version = MajorProtocolVersion::read_from(&mut reader)?;
+        let endianness = reader.read::<LittleEndian, Endianness>()?;
+        let ty = reader.read::<LittleEndian, MessageType>()?;
+        let flags = reader.read::<LittleEndian, Flags>()?;
+        let major_protocol_version = reader.read::<LittleEndian, MajorProtocolVersion>()?;
 
         fn inner_read<T: ByteOrder>(
             reader: &mut MessageReader<impl Read>,
         ) -> std::io::Result<(u32, u32, Vec<HeaderField>)> {
-            let length = reader.read_u32::<T>()?;
-            let serial = reader.read_u32::<T>()?;
-            let fields = reader.read_array::<T, HeaderField>()?;
+            let length = reader.read::<T, u32>()?;
+            let serial = reader.read::<T, u32>()?;
+            let header_fields = reader.read::<T, Vec<HeaderField>>()?;
 
-            Ok((length, serial, fields))
+            Ok((length, serial, header_fields))
         }
 
-        let (length, serial, fields) = match endianness {
+        let (length, serial, header_fields) = match endianness {
             Endianness::LittleEndian => inner_read::<LittleEndian>(&mut reader)?,
             Endianness::BigEndian => inner_read::<BigEndian>(&mut reader)?,
         };
@@ -82,26 +58,26 @@ impl Message {
             flags,
             major_protocol_version,
             serial,
-            fields,
+            header_fields,
             body,
         })
     }
 
     pub(crate) fn write_to(&self, mut writer: MessageWriter<impl Write>) -> std::io::Result<()> {
-        self.endianness.write_to(&mut writer)?;
-        self.ty.write_to(&mut writer)?;
-        self.flags.write_to(&mut writer)?;
-        self.major_protocol_version.write_to(&mut writer)?;
+        writer.write::<LittleEndian, _>(self.endianness)?;
+        writer.write::<LittleEndian, _>(self.ty)?;
+        writer.write::<LittleEndian, _>(self.flags)?;
+        writer.write::<LittleEndian, _>(self.major_protocol_version)?;
 
         fn inner_write<T: ByteOrder>(
             writer: &mut MessageWriter<impl Write>,
             length: u32,
             serial: u32,
-            fields: &[HeaderField],
+            header_fields: &[HeaderField],
         ) -> std::io::Result<()> {
-            writer.write_u32::<T>(length)?;
-            writer.write_u32::<T>(serial)?;
-            writer.write_array::<T, _>(fields)?;
+            writer.write::<T, _>(length)?;
+            writer.write::<T, _>(serial)?;
+            writer.write_array::<T, _>(header_fields)?;
 
             Ok(())
         }
@@ -111,13 +87,13 @@ impl Message {
                 &mut writer,
                 self.body.len() as u32,
                 self.serial,
-                &self.fields,
+                &self.header_fields,
             )?,
             Endianness::BigEndian => inner_write::<BigEndian>(
                 &mut writer,
                 self.body.len() as u32,
                 self.serial,
-                &self.fields,
+                &self.header_fields,
             )?,
         }
 

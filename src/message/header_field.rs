@@ -1,33 +1,25 @@
 use crate::wire_format::WireFormatType;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct MajorProtocolVersion(u8);
+pub struct HeaderField {
+    code: u8,
+}
 
-impl WireFormatType for MajorProtocolVersion {
-    const ALIGNMENT: usize = std::mem::size_of::<u8>();
+impl WireFormatType for HeaderField {
+    const ALIGNMENT: usize = 8;
 
     fn read_from<T: byteorder::ByteOrder, R: std::io::Read>(
         reader: &mut crate::wire_format::MessageReader<R>,
     ) -> std::io::Result<Self> {
-        reader.read::<T, u8>().map(Self::from)
+        reader.align_to(Self::ALIGNMENT)?;
+        todo!()
     }
 
     fn write_to<T: byteorder::ByteOrder, W: std::io::Write>(
         &self,
         writer: &mut crate::wire_format::MessageWriter<W>,
     ) -> std::io::Result<()> {
-        writer.write::<T, u8>(self.0)
-    }
-}
-
-impl From<u8> for MajorProtocolVersion {
-    fn from(value: u8) -> Self {
-        Self(value)
-    }
-}
-
-impl From<MajorProtocolVersion> for u8 {
-    fn from(value: MajorProtocolVersion) -> Self {
-        value.0
+        writer.align_to(Self::ALIGNMENT)?;
+        todo!();
     }
 }

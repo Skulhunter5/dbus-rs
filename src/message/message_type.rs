@@ -1,4 +1,4 @@
-use crate::message::{MessageReader, MessageWriter};
+use crate::wire_format::WireFormatType;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
@@ -10,11 +10,13 @@ pub enum MessageType {
     Signal = 4,
 }
 
-impl MessageType {
-    pub(crate) fn read_from(
-        reader: &mut MessageReader<impl std::io::Read>,
+impl WireFormatType for MessageType {
+    const ALIGNMENT: usize = std::mem::size_of::<u8>();
+
+    fn read_from<T: byteorder::ByteOrder, R: std::io::Read>(
+        reader: &mut crate::wire_format::MessageReader<R>,
     ) -> std::io::Result<Self> {
-        Self::try_from(reader.read_u8()?).map_err(|invalid_byte| {
+        Self::try_from(reader.read::<T, u8>()?).map_err(|invalid_byte| {
             std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 format!("invalid header message type byte: {}", invalid_byte),
@@ -22,11 +24,11 @@ impl MessageType {
         })
     }
 
-    pub(crate) fn write_to(
+    fn write_to<T: byteorder::ByteOrder, W: std::io::Write>(
         &self,
-        writer: &mut MessageWriter<impl std::io::Write>,
+        writer: &mut crate::wire_format::MessageWriter<W>,
     ) -> std::io::Result<()> {
-        writer.write_u8(*self as u8)
+        writer.write::<T, u8>(*self as u8)
     }
 }
 

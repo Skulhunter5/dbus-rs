@@ -6,7 +6,8 @@ use std::{
 
 use crate::{
     PRINT_HANDSHAKE,
-    message::{Message, MessageReader, MessageWriter},
+    message::Message,
+    wire_format::{MessageReader, MessageWriter},
 };
 
 #[derive(Debug)]
