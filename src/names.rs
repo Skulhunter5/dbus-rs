@@ -1,11 +1,11 @@
 mod bus;
+mod error;
 mod interface;
 mod member;
-mod error;
 pub use bus::BusName;
+pub use error::ErrorName;
 pub use interface::InterfaceName;
 pub use member::MemberName;
-pub use error::ErrorName;
 
 const MAX_NAME_LENGTH: usize = 255;
 

@@ -11,7 +11,9 @@ pub enum MessageType {
 }
 
 impl MessageType {
-    pub(crate) fn read_from(reader: &mut MessageReader<impl std::io::Read>) -> std::io::Result<Self> {
+    pub(crate) fn read_from(
+        reader: &mut MessageReader<impl std::io::Read>,
+    ) -> std::io::Result<Self> {
         Self::try_from(reader.read_u8()?).map_err(|invalid_byte| {
             std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
@@ -20,7 +22,10 @@ impl MessageType {
         })
     }
 
-    pub(crate) fn write_to(&self, writer: &mut MessageWriter<impl std::io::Write>) -> std::io::Result<()> {
+    pub(crate) fn write_to(
+        &self,
+        writer: &mut MessageWriter<impl std::io::Write>,
+    ) -> std::io::Result<()> {
         writer.write_u8(*self as u8)
     }
 }

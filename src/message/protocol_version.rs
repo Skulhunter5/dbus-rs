@@ -4,11 +4,16 @@ use crate::message::{MessageReader, MessageWriter};
 pub struct MajorProtocolVersion(u8);
 
 impl MajorProtocolVersion {
-    pub(crate) fn read_from(reader: &mut MessageReader<impl std::io::Read>) -> std::io::Result<Self> {
+    pub(crate) fn read_from(
+        reader: &mut MessageReader<impl std::io::Read>,
+    ) -> std::io::Result<Self> {
         reader.read_u8().map(|byte| Self::from(byte))
     }
 
-    pub(crate) fn write_to(&self, writer: &mut MessageWriter<impl std::io::Write>) -> std::io::Result<()> {
+    pub(crate) fn write_to(
+        &self,
+        writer: &mut MessageWriter<impl std::io::Write>,
+    ) -> std::io::Result<()> {
         writer.write_u8(self.0)
     }
 }

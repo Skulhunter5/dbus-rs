@@ -25,11 +25,16 @@ pub struct HeaderField {
 impl WireFormatType for HeaderField {
     const ALIGNMENT: usize = 8;
 
-    fn read_from<T: ByteOrder, R: std::io::Read>(reader: &mut MessageReader<R>) -> std::io::Result<Self> {
+    fn read_from<T: ByteOrder, R: std::io::Read>(
+        reader: &mut MessageReader<R>,
+    ) -> std::io::Result<Self> {
         todo!()
     }
 
-    fn write_to<T: ByteOrder, W: Write>(&self, writer: &mut MessageWriter<W>) -> std::io::Result<()> {
+    fn write_to<T: ByteOrder, W: Write>(
+        &self,
+        writer: &mut MessageWriter<W>,
+    ) -> std::io::Result<()> {
         writer.align_to(Self::ALIGNMENT)?;
         todo!();
     }
@@ -101,10 +106,20 @@ impl Message {
         }
 
         match self.endianness {
-            Endianness::LittleEndian => inner_write::<LittleEndian>(&mut writer, self.body.len() as u32, self.serial, &self.fields)?,
-            Endianness::BigEndian => inner_write::<BigEndian>(&mut writer, self.body.len() as u32, self.serial, &self.fields)?,
+            Endianness::LittleEndian => inner_write::<LittleEndian>(
+                &mut writer,
+                self.body.len() as u32,
+                self.serial,
+                &self.fields,
+            )?,
+            Endianness::BigEndian => inner_write::<BigEndian>(
+                &mut writer,
+                self.body.len() as u32,
+                self.serial,
+                &self.fields,
+            )?,
         }
-        
+
         writer.write_body(&self.body)
     }
 }

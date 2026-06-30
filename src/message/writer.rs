@@ -23,8 +23,7 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         let remainder = self.offset % alignment;
         if remainder != 0 {
             let padding_bytes = alignment - remainder;
-            self.stream
-                .write_all(&PADDING_BUFFER[..padding_bytes])?;
+            self.stream.write_all(&PADDING_BUFFER[..padding_bytes])?;
             self.offset += padding_bytes;
         }
         Ok(())
@@ -62,7 +61,10 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         Ok(())
     }
 
-    pub fn write_array<T: ByteOrder, E: WireFormatType>(&mut self, array: &[E]) -> std::io::Result<()> {
+    pub fn write_array<T: ByteOrder, E: WireFormatType>(
+        &mut self,
+        array: &[E],
+    ) -> std::io::Result<()> {
         // TODO: replace the mess of having to write the "header" (i.e. length + element padding) to
         // array_buffer. it should probably be possible to just set array_writer.offset to something
         // different so that it still ensures the correct alignment when writing to the
@@ -70,7 +72,10 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         // element_alignment`
         let array_bytes = {
             let mut array_buffer = Vec::new();
-            let mut array_writer = MessageWriter { stream: &mut array_buffer, offset: self.offset };
+            let mut array_writer = MessageWriter {
+                stream: &mut array_buffer,
+                offset: self.offset,
+            };
             let initial_offset = array_writer.offset;
 
             array_writer.write_u32::<T>(0)?;
@@ -91,7 +96,13 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         };
 
         if array_bytes.len() > 2usize.pow(26) {
-            return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("array (len: {}) exceeding max allowed length of 2^26 bytes", array_bytes.len())));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!(
+                    "array (len: {}) exceeding max allowed length of 2^26 bytes",
+                    array_bytes.len()
+                ),
+            ));
         }
 
         self.write_u32::<T>(array_bytes.len() as u32)?;
