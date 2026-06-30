@@ -48,7 +48,7 @@ impl<'a, R: Read> MessageReader<'a, R> {
     }
 
     pub fn read_body(mut self, length: usize) -> std::io::Result<Vec<u8>> {
-        self.align(8);
+        self.align(8)?;
         let mut body = vec![0u8; length];
         self.stream.read_exact(&mut body)?;
         self.offset += length;

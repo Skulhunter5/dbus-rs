@@ -55,7 +55,7 @@ impl<'a, W: Write> MessageWriter<'a, W> {
     }
 
     pub fn write_body(mut self, body: &[u8]) -> std::io::Result<()> {
-        self.align_to(8);
+        self.align_to(8)?;
         self.stream.write_all(&body)?;
         self.offset += body.len();
         Ok(())
