@@ -62,4 +62,19 @@ mod test {
         assert!(name_string.len() > MAX_NAME_LENGTH);
         assert!(MemberName::new(name_string).is_none());
     }
+
+    #[test]
+    fn empty() {
+        assert!(MemberName::new("").is_none());
+    }
+
+    #[test]
+    fn period() {
+        assert!(MemberName::new(".").is_none());
+    }
+
+    #[test]
+    fn multiple_elements() {
+        assert!(MemberName::new("org.freedesktop").is_none());
+    }
 }

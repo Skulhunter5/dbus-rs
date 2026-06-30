@@ -65,4 +65,19 @@ mod test {
         assert!(name_string.len() > MAX_NAME_LENGTH);
         assert!(ErrorName::new(name_string).is_none());
     }
+
+    #[test]
+    fn empty_first_element() {
+        assert!(ErrorName::new(".freedesktop.DBus.Error").is_none());
+    }
+
+    #[test]
+    fn empty_middle_element() {
+        assert!(ErrorName::new("org..DBus.Error").is_none());
+    }
+
+    #[test]
+    fn empty_last_element() {
+        assert!(ErrorName::new("org.freedesktop.DBus.").is_none());
+    }
 }

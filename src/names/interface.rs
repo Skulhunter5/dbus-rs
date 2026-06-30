@@ -65,4 +65,19 @@ mod test {
         assert!(name_string.len() > MAX_NAME_LENGTH);
         assert!(InterfaceName::new(name_string).is_none());
     }
+
+    #[test]
+    fn empty_first_element() {
+        assert!(InterfaceName::new(".freedesktop.DBus").is_none());
+    }
+
+    #[test]
+    fn empty_middle_element() {
+        assert!(InterfaceName::new("org..DBus").is_none());
+    }
+
+    #[test]
+    fn empty_last_element() {
+        assert!(InterfaceName::new("org.freedesktop.").is_none());
+    }
 }

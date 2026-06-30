@@ -120,4 +120,19 @@ mod test {
         assert!(name_string.len() > MAX_NAME_LENGTH);
         assert!(BusName::new(name_string).is_none());
     }
+
+    #[test]
+    fn empty_first_element() {
+        assert!(BusName::new(".freedesktop.DBus").is_none());
+    }
+
+    #[test]
+    fn empty_middle_element() {
+        assert!(BusName::new("org..DBus").is_none());
+    }
+
+    #[test]
+    fn empty_last_element() {
+        assert!(BusName::new("org.freedesktop.").is_none());
+    }
 }
