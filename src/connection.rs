@@ -31,7 +31,7 @@ impl Connection {
             while !message.ends_with("\r\n") {
                 let bytes_read = stream.read(&mut buffer)?;
                 let recv_buffer = &buffer[..bytes_read];
-                let message_part = match str::from_utf8(&recv_buffer) {
+                let message_part = match str::from_utf8(recv_buffer) {
                     Ok(message_part) => message_part,
                     Err(_) => {
                         return Err(std::io::Error::new(
@@ -57,45 +57,33 @@ impl Connection {
 
         let auth_response = read(&mut stream)?;
         if auth_response != "DATA" {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!(
-                    "unexpected response to auth message during handshake: {:?}",
-                    auth_response
-                ),
-            ));
+            return Err(std::io::Error::other(format!(
+                "unexpected response to auth message during handshake: {:?}",
+                auth_response
+            )));
         }
 
         write(&mut stream, "DATA")?;
 
         let data_response = read(&mut stream)?;
         if data_response.starts_with("REJECTED") {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!(
-                    "dbus session bus rejected the authentication: {:?}",
-                    data_response
-                ),
-            ));
+            return Err(std::io::Error::other(format!(
+                "dbus session bus rejected the authentication: {:?}",
+                data_response
+            )));
         }
         let server_guid = {
             let Some((left, right)) = data_response.split_once(' ') else {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!(
-                        "unexpected response to data message during handshake: {:?}",
-                        data_response
-                    ),
-                ));
+                return Err(std::io::Error::other(format!(
+                    "unexpected response to data message during handshake: {:?}",
+                    data_response
+                )));
             };
             if left != "OK" {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!(
-                        "unexpected response to data message during handshake: {:?}",
-                        data_response
-                    ),
-                ));
+                return Err(std::io::Error::other(format!(
+                    "unexpected response to data message during handshake: {:?}",
+                    data_response
+                )));
             }
             right.to_owned()
         };

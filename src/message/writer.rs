@@ -30,7 +30,7 @@ impl<'a, W: Write> MessageWriter<'a, W> {
     }
 
     pub fn is_aligned_to(&self, alignment: usize) -> bool {
-        self.offset % alignment == 0
+        self.offset.is_multiple_of(alignment)
     }
 
     fn write_bytes(&mut self, bytes: impl AsRef<[u8]>) -> std::io::Result<()> {
@@ -56,7 +56,7 @@ impl<'a, W: Write> MessageWriter<'a, W> {
 
     pub fn write_body(mut self, body: &[u8]) -> std::io::Result<()> {
         self.align_to(8)?;
-        self.stream.write_all(&body)?;
+        self.stream.write_all(body)?;
         self.offset += body.len();
         Ok(())
     }

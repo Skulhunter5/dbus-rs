@@ -7,7 +7,7 @@ impl Flags {
     pub(crate) fn read_from(
         reader: &mut MessageReader<impl std::io::Read>,
     ) -> std::io::Result<Self> {
-        reader.read_u8().map(|byte| Self::from(byte))
+        reader.read_u8().map(Self::from)
     }
 
     pub(crate) fn write_to(
@@ -40,8 +40,8 @@ impl From<u8> for Flags {
     }
 }
 
-impl Into<u8> for Flags {
-    fn into(self) -> u8 {
-        self.0
+impl From<Flags> for u8 {
+    fn from(value: Flags) -> Self {
+        value.0
     }
 }

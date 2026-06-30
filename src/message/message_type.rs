@@ -30,9 +30,9 @@ impl MessageType {
     }
 }
 
-impl Into<u8> for MessageType {
-    fn into(self) -> u8 {
-        self as u8
+impl From<MessageType> for u8 {
+    fn from(value: MessageType) -> Self {
+        value as u8
     }
 }
 

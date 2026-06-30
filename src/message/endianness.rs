@@ -27,9 +27,9 @@ impl Endianness {
     }
 }
 
-impl Into<u8> for Endianness {
-    fn into(self) -> u8 {
-        self as u8
+impl From<Endianness> for u8 {
+    fn from(value: Endianness) -> Self {
+        value as u8
     }
 }
 

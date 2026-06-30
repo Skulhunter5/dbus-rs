@@ -6,7 +6,7 @@ pub struct BusName(String);
 impl BusName {
     pub fn new(name: impl Into<String>) -> Option<Self> {
         let name = name.into();
-        Self::validate(&name).then(|| Self(name))
+        Self::validate(&name).then_some(Self(name))
     }
 
     fn validate_element_char(c: &char) -> bool {
@@ -62,12 +62,7 @@ mod test {
     #[test]
     fn unique_max_length() {
         let mut name_string = String::from(":1.0.");
-        name_string.push_str(
-            std::iter::repeat('2')
-                .take(MAX_NAME_LENGTH - name_string.len())
-                .collect::<String>()
-                .as_str(),
-        );
+        name_string.push_str("2".repeat(MAX_NAME_LENGTH - name_string.len()).as_str());
         assert!(name_string.len() == MAX_NAME_LENGTH);
         assert!(BusName::new(name_string).is_some());
     }
@@ -75,12 +70,7 @@ mod test {
     #[test]
     fn well_known_max_length() {
         let mut name_string = String::from("org.freedesktop.");
-        name_string.push_str(
-            std::iter::repeat('a')
-                .take(MAX_NAME_LENGTH - name_string.len())
-                .collect::<String>()
-                .as_str(),
-        );
+        name_string.push_str("a".repeat(MAX_NAME_LENGTH - name_string.len()).as_str());
         assert!(name_string.len() == MAX_NAME_LENGTH);
         assert!(BusName::new(name_string).is_some());
     }
@@ -98,12 +88,7 @@ mod test {
     #[test]
     fn unique_too_long() {
         let mut name_string = String::from(":1.0.");
-        name_string.push_str(
-            std::iter::repeat('2')
-                .take(MAX_NAME_LENGTH - name_string.len() + 1)
-                .collect::<String>()
-                .as_str(),
-        );
+        name_string.push_str("2".repeat(MAX_NAME_LENGTH - name_string.len() + 1).as_str());
         assert!(name_string.len() > MAX_NAME_LENGTH);
         assert!(BusName::new(name_string).is_none());
     }
@@ -111,12 +96,7 @@ mod test {
     #[test]
     fn well_known_too_long() {
         let mut name_string = String::from("org.freedesktop.");
-        name_string.push_str(
-            std::iter::repeat('a')
-                .take(MAX_NAME_LENGTH - name_string.len() + 1)
-                .collect::<String>()
-                .as_str(),
-        );
+        name_string.push_str("a".repeat(MAX_NAME_LENGTH - name_string.len() + 1).as_str());
         assert!(name_string.len() > MAX_NAME_LENGTH);
         assert!(BusName::new(name_string).is_none());
     }

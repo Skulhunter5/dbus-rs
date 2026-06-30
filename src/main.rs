@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use dbus::{Connection, PRINT, message::*};
+use dbus::{Connection, PRINT};
 
 fn main() {
     let dbus_session_bus_address =

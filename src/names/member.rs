@@ -6,7 +6,7 @@ pub struct MemberName(String);
 impl MemberName {
     pub fn new(name: impl Into<String>) -> Option<Self> {
         let name = name.into();
-        Self::validate(&name).then(|| Self(name))
+        Self::validate(&name).then_some(Self(name))
     }
 
     fn validate_element_char(c: &char) -> bool {
@@ -42,11 +42,7 @@ mod test {
 
     #[test]
     fn max_length() {
-        let name_string = std::iter::repeat('a')
-            .take(MAX_NAME_LENGTH)
-            .collect::<String>();
-        assert!(name_string.len() == MAX_NAME_LENGTH);
-        assert!(MemberName::new(name_string).is_some());
+        assert!(MemberName::new("a".repeat(MAX_NAME_LENGTH)).is_some());
     }
 
     #[test]
@@ -56,11 +52,7 @@ mod test {
 
     #[test]
     fn too_long() {
-        let name_string = std::iter::repeat('a')
-            .take(MAX_NAME_LENGTH + 1)
-            .collect::<String>();
-        assert!(name_string.len() > MAX_NAME_LENGTH);
-        assert!(MemberName::new(name_string).is_none());
+        assert!(MemberName::new("a".repeat(MAX_NAME_LENGTH + 1)).is_none());
     }
 
     #[test]

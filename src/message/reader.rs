@@ -17,7 +17,7 @@ impl<'a> MessageReader<'a, UnixStream> {
 }
 
 impl<'a, R: Read> MessageReader<'a, R> {
-    fn align(&mut self, alignment: usize) -> std::io::Result<()> {
+    pub fn align_to(&mut self, alignment: usize) -> std::io::Result<()> {
         let mut padding_buffer = [0u8; 8];
         let remainder = self.offset % alignment;
         if remainder != 0 {
@@ -37,7 +37,7 @@ impl<'a, R: Read> MessageReader<'a, R> {
 
     pub fn read_u32<T: ByteOrder>(&mut self) -> std::io::Result<u32> {
         const BYTES: usize = std::mem::size_of::<u32>();
-        self.align(BYTES)?;
+        self.align_to(BYTES)?;
         let res = self.stream.read_u32::<T>()?;
         self.offset += BYTES;
         Ok(res)
@@ -48,7 +48,7 @@ impl<'a, R: Read> MessageReader<'a, R> {
     }
 
     pub fn read_body(mut self, length: usize) -> std::io::Result<Vec<u8>> {
-        self.align(8)?;
+        self.align_to(8)?;
         let mut body = vec![0u8; length];
         self.stream.read_exact(&mut body)?;
         self.offset += length;

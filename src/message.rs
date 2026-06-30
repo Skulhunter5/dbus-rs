@@ -28,6 +28,7 @@ impl WireFormatType for HeaderField {
     fn read_from<T: ByteOrder, R: std::io::Read>(
         reader: &mut MessageReader<R>,
     ) -> std::io::Result<Self> {
+        reader.align_to(Self::ALIGNMENT)?;
         todo!()
     }
 
@@ -96,11 +97,11 @@ impl Message {
             writer: &mut MessageWriter<impl Write>,
             length: u32,
             serial: u32,
-            fields: &Vec<HeaderField>,
+            fields: &[HeaderField],
         ) -> std::io::Result<()> {
             writer.write_u32::<T>(length)?;
             writer.write_u32::<T>(serial)?;
-            writer.write_array::<T, _>(&fields)?;
+            writer.write_array::<T, _>(fields)?;
 
             Ok(())
         }

@@ -7,7 +7,7 @@ impl MajorProtocolVersion {
     pub(crate) fn read_from(
         reader: &mut MessageReader<impl std::io::Read>,
     ) -> std::io::Result<Self> {
-        reader.read_u8().map(|byte| Self::from(byte))
+        reader.read_u8().map(Self::from)
     }
 
     pub(crate) fn write_to(
@@ -24,8 +24,8 @@ impl From<u8> for MajorProtocolVersion {
     }
 }
 
-impl Into<u8> for MajorProtocolVersion {
-    fn into(self) -> u8 {
-        self.0
+impl From<MajorProtocolVersion> for u8 {
+    fn from(value: MajorProtocolVersion) -> Self {
+        value.0
     }
 }
