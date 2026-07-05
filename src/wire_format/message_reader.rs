@@ -2,7 +2,7 @@ use std::{io::Read, os::unix::net::UnixStream};
 
 use byteorder::{ByteOrder, ReadBytesExt as _};
 
-use crate::wire_format::{StringLengthType, WireFormatType};
+use crate::wire_format::{StringLengthType, WireFormatRead};
 
 #[derive(Debug)]
 pub struct MessageReader<'a, R: Read> {
@@ -37,7 +37,7 @@ impl<'a, R: Read> MessageReader<'a, R> {
         self.read_u8()
     }
 
-    pub fn read<T: ByteOrder, E: WireFormatType>(&mut self) -> std::io::Result<E> {
+    pub fn read<T: ByteOrder, E: WireFormatRead>(&mut self) -> std::io::Result<E> {
         E::read_from::<T, _>(self)
     }
 
@@ -132,7 +132,7 @@ impl<'a, R: Read> MessageReader<'a, R> {
         Ok(string)
     }
 
-    pub(super) fn read_array<T: ByteOrder, E: WireFormatType>(
+    pub(super) fn read_array<T: ByteOrder, E: WireFormatRead>(
         &mut self,
     ) -> std::io::Result<Vec<E>> {
         let byte_length = self.read_u32::<T>()?;

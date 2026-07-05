@@ -1,4 +1,4 @@
-use crate::wire_format::WireFormatType;
+use crate::wire_format::{WireFormatRead, WireFormatType, WireFormatWrite};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
@@ -9,7 +9,9 @@ pub enum Endianness {
 
 impl WireFormatType for Endianness {
     const ALIGNMENT: usize = std::mem::size_of::<u8>();
+}
 
+impl WireFormatRead for Endianness {
     fn read_from<T: byteorder::ByteOrder, R: std::io::Read>(
         reader: &mut crate::wire_format::MessageReader<R>,
     ) -> std::io::Result<Self> {
@@ -20,7 +22,9 @@ impl WireFormatType for Endianness {
             )
         })
     }
+}
 
+impl WireFormatWrite for Endianness {
     fn write_to<T: byteorder::ByteOrder, W: std::io::Write>(
         &self,
         writer: &mut crate::wire_format::MessageWriter<W>,

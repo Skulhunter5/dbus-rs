@@ -2,7 +2,7 @@ use std::{io::Write, os::unix::net::UnixStream};
 
 use byteorder::{ByteOrder, WriteBytesExt as _};
 
-use crate::wire_format::{StringLengthType, WireFormatType};
+use crate::wire_format::{StringLengthType, WireFormatWrite};
 
 #[derive(Debug)]
 pub struct MessageWriter<'a, W: Write> {
@@ -37,7 +37,7 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         self.write_u8(value)
     }
 
-    pub fn write<T: ByteOrder, E: WireFormatType>(&mut self, value: E) -> std::io::Result<()> {
+    pub fn write<T: ByteOrder, E: WireFormatWrite>(&mut self, value: E) -> std::io::Result<()> {
         value.write_to::<T, _>(self)
     }
 
@@ -119,7 +119,7 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         Ok(())
     }
 
-    pub fn write_array<T: ByteOrder, E: WireFormatType>(
+    pub fn write_array<T: ByteOrder, E: WireFormatWrite>(
         &mut self,
         array: impl AsRef<[E]>,
     ) -> std::io::Result<()> {
@@ -169,7 +169,7 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         self.align_to(E::ALIGNMENT)?;
         self.write_bytes(array_bytes)?;
 
-        todo!();
+        Ok(())
     }
 
     fn write_bytes(&mut self, bytes: impl AsRef<[u8]>) -> std::io::Result<()> {

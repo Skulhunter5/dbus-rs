@@ -1,4 +1,4 @@
-use crate::wire_format::WireFormatType;
+use crate::wire_format::{WireFormatRead, WireFormatType, WireFormatWrite};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
@@ -12,7 +12,9 @@ pub enum MessageType {
 
 impl WireFormatType for MessageType {
     const ALIGNMENT: usize = std::mem::size_of::<u8>();
+}
 
+impl WireFormatRead for MessageType {
     fn read_from<T: byteorder::ByteOrder, R: std::io::Read>(
         reader: &mut crate::wire_format::MessageReader<R>,
     ) -> std::io::Result<Self> {
@@ -23,7 +25,9 @@ impl WireFormatType for MessageType {
             )
         })
     }
+}
 
+impl WireFormatWrite for MessageType {
     fn write_to<T: byteorder::ByteOrder, W: std::io::Write>(
         &self,
         writer: &mut crate::wire_format::MessageWriter<W>,
