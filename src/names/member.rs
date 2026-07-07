@@ -4,24 +4,49 @@ pub struct MemberName(String);
 impl MemberName {
     pub const MAX_LENGTH: usize = super::MAX_LENGTH;
 
-    pub fn new(name: impl Into<String>) -> Option<Self> {
-        let name = name.into();
-        Self::validate(&name).then_some(Self(name))
+    pub fn new(name: impl Into<String> + AsRef<str>) -> Option<Self> {
+        match Self::validate(name.as_ref()) {
+            Ok(()) => Some(Self(name.into())),
+            Err(_) => None,
+        }
     }
 
     fn validate_element_char(c: &char) -> bool {
         c.is_ascii_alphanumeric() || *c == '_'
     }
 
-    fn validate(name: &str) -> bool {
-        if name.is_empty() || name.len() > Self::MAX_LENGTH {
-            return false;
+    fn validate(name: &str) -> Result<(), String> {
+        if name.is_empty() {
+            return Err("empty".to_owned());
+        }
+        if name.len() > Self::MAX_LENGTH {
+            return Err(format!(
+                "too long: has {} but max allowed is {}",
+                name.len(),
+                Self::MAX_LENGTH
+            ));
         }
         super::validate_element(name, false, Self::validate_element_char)
     }
 
     pub fn as_str(&self) -> &str {
         self.0.as_str()
+    }
+}
+
+impl TryFrom<String> for MemberName {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::validate(&value).map(|_| Self(value))
+    }
+}
+
+impl<'a> TryFrom<&'a str> for MemberName {
+    type Error = String;
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        Self::validate(&value).map(|_| Self(value.to_owned()))
     }
 }
 
@@ -38,7 +63,7 @@ impl From<MemberName> for String {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::names::MemberName;
 
     #[test]

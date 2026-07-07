@@ -15,53 +15,58 @@ fn validate(
     min_element_count: usize,
     elements_can_start_with_digit: bool,
     validate_element_char: fn(&char) -> bool,
-) -> bool {
+) -> Result<(), String> {
     if name.len() > MAX_LENGTH {
-        return false;
+        return Err(format!(
+            "too long: has {} but max allowed is {}",
+            name.len(),
+            MAX_LENGTH
+        ));
     }
 
     let mut element_count = 0;
-    let contains_invalid_element = name
-        .split(separator)
-        .find(|element| {
-            element_count += 1;
-            !validate_element(
+    for (element, error) in name.split(separator).map(|element| {
+        (
+            element,
+            validate_element(
                 element,
                 elements_can_start_with_digit,
                 validate_element_char,
             )
-        })
-        .is_some();
-    if contains_invalid_element {
-        return false;
+            .err(),
+        )
+    }) {
+        element_count += 1;
+        if let Some(error) = error {
+            return Err(format!("invalid element ({:?}): {}", element, error));
+        }
     }
 
     if element_count < min_element_count {
-        return false;
+        return Err(format!(
+            "not enough elements: has {} but expected at least {}",
+            element_count, min_element_count
+        ));
     }
 
-    true
+    Ok(())
 }
 
 fn validate_element(
     element: &str,
     can_start_with_digit: bool,
     validate_element_char: fn(&char) -> bool,
-) -> bool {
+) -> Result<(), String> {
     let Some(c) = element.chars().next() else {
-        return false;
+        return Err("empty".to_owned());
     };
     if !can_start_with_digit && c.is_ascii_digit() {
-        return false;
+        return Err("starts with digit".to_owned());
     }
 
-    let contains_invalid_char = element
-        .chars()
-        .find(|c| !validate_element_char(c))
-        .is_some();
-    if contains_invalid_char {
-        return false;
+    if let Some(invalid_char) = element.chars().find(|c| !validate_element_char(c)) {
+        return Err(format!("invalid character: {:?}", invalid_char));
     }
 
-    true
+    Ok(())
 }

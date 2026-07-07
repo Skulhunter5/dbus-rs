@@ -3,34 +3,64 @@ pub struct BusName(String);
 
 impl BusName {
     pub const MAX_LENGTH: usize = super::MAX_LENGTH;
+    pub const SEPARATOR: char = '.';
+    pub const MIN_ELEMENT_COUNT: usize = 2;
 
-    pub fn new(name: impl Into<String>) -> Option<Self> {
-        let name = name.into();
-        Self::validate(&name).then_some(Self(name))
+    pub fn new(name: impl Into<String> + AsRef<str>) -> Option<Self> {
+        match Self::validate(name.as_ref()) {
+            Ok(()) => Some(Self(name.into())),
+            Err(_) => None,
+        }
     }
 
     fn validate_element_char(c: &char) -> bool {
         c.is_ascii_alphanumeric() || *c == '_' || *c == '-'
     }
 
-    fn validate(name: &str) -> bool {
+    fn validate(name: &str) -> Result<(), String> {
         if name.len() > Self::MAX_LENGTH {
-            return false;
+            return Err(format!(
+                "too long: has {} but max allowed is {}",
+                name.len(),
+                Self::MAX_LENGTH
+            ));
         }
 
         let Some(first_char) = name.chars().next() else {
-            return false;
+            return Err("empty".to_owned());
         };
-        if first_char == ':' {
-            let name = &name[(':'.len_utf8())..];
-            super::validate(name, '.', 2, true, Self::validate_element_char)
+        let (name, elements_can_start_with_digit) = if first_char == ':' {
+            (&name[(':'.len_utf8())..], true)
         } else {
-            super::validate(name, '.', 2, false, Self::validate_element_char)
-        }
+            (name, false)
+        };
+        super::validate(
+            name,
+            Self::SEPARATOR,
+            Self::MIN_ELEMENT_COUNT,
+            elements_can_start_with_digit,
+            Self::validate_element_char,
+        )
     }
 
     pub fn as_str(&self) -> &str {
         self.0.as_str()
+    }
+}
+
+impl TryFrom<String> for BusName {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::validate(&value).map(|_| Self(value))
+    }
+}
+
+impl<'a> TryFrom<&'a str> for BusName {
+    type Error = String;
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        Self::validate(&value).map(|_| Self(value.to_owned()))
     }
 }
 
@@ -47,7 +77,7 @@ impl From<BusName> for String {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::names::BusName;
 
     #[test]

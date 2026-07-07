@@ -3,22 +3,48 @@ pub struct ErrorName(String);
 
 impl ErrorName {
     pub const MAX_LENGTH: usize = super::MAX_LENGTH;
+    pub const SEPARATOR: char = '.';
+    pub const MIN_ELEMENT_COUNT: usize = 2;
 
-    pub fn new(name: impl Into<String>) -> Option<Self> {
-        let name = name.into();
-        Self::validate(&name).then_some(Self(name))
+    pub fn new(name: impl Into<String> + AsRef<str>) -> Option<Self> {
+        match Self::validate(name.as_ref()) {
+            Ok(()) => Some(Self(name.into())),
+            Err(_) => None,
+        }
     }
 
     fn validate_element_char(c: &char) -> bool {
         c.is_ascii_alphanumeric() || *c == '_'
     }
 
-    fn validate(name: &str) -> bool {
-        super::validate(name, '.', 2, false, Self::validate_element_char)
+    fn validate(name: &str) -> Result<(), String> {
+        super::validate(
+            name,
+            Self::SEPARATOR,
+            Self::MIN_ELEMENT_COUNT,
+            false,
+            Self::validate_element_char,
+        )
     }
 
     pub fn as_str(&self) -> &str {
         self.0.as_str()
+    }
+}
+
+impl TryFrom<String> for ErrorName {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::validate(&value).map(|_| Self(value))
+    }
+}
+
+impl<'a> TryFrom<&'a str> for ErrorName {
+    type Error = String;
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        Self::validate(&value).map(|_| Self(value.to_owned()))
     }
 }
 
@@ -35,7 +61,7 @@ impl From<ErrorName> for String {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::names::ErrorName;
 
     #[test]
