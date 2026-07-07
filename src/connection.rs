@@ -17,6 +17,7 @@ pub struct Connection {
 }
 
 impl Connection {
+    // TODO: maybe init the connection with "AUTH EXTERNAL 31303030" (i.e. UID)
     pub fn init(path: impl AsRef<Path>) -> std::io::Result<Self> {
         fn write(stream: &mut UnixStream, message: impl AsRef<str>) -> std::io::Result<()> {
             if PRINT_HANDSHAKE {
@@ -50,6 +51,7 @@ impl Connection {
             }
             Ok(message)
         }
+
         let mut stream = UnixStream::connect(path.as_ref())?;
 
         stream.write_all(&[0])?;
@@ -89,7 +91,7 @@ impl Connection {
             right.to_owned()
         };
 
-        write!(&mut stream, "BEGIN")?;
+        write(&mut stream, "BEGIN")?;
 
         Ok(Self {
             stream,
