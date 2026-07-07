@@ -2,7 +2,7 @@ use std::{io::Write, os::unix::net::UnixStream};
 
 use byteorder::{ByteOrder, WriteBytesExt as _};
 
-use crate::wire_format::{StringLengthType, WireFormatWrite};
+use crate::wire_format::{StringLengthType, WireFormatType, WireFormatWrite};
 
 #[derive(Debug)]
 pub struct MessageWriter<'a, W: Write> {
@@ -42,7 +42,8 @@ impl<'a, W: Write> MessageWriter<'a, W> {
     }
 
     pub fn write_body(mut self, body: &[u8]) -> std::io::Result<()> {
-        self.align_to(8)?;
+        const BODY_ALIGNMENT: usize = 8;
+        self.align_to(BODY_ALIGNMENT)?;
         self.stream.write_all(body)?;
         self.offset += body.len();
         Ok(())
@@ -59,50 +60,51 @@ impl<'a, W: Write> MessageWriter<'a, W> {
     }
 
     pub(super) fn write_u16<T: ByteOrder>(&mut self, value: u16) -> std::io::Result<()> {
-        const BYTES: usize = std::mem::size_of::<u16>();
-        self.align_to(BYTES)?;
+        self.align_to(<u16 as WireFormatType>::ALIGNMENT)?;
         self.stream.write_u16::<T>(value)?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<u16>();
         Ok(())
     }
 
     pub(super) fn write_i16<T: ByteOrder>(&mut self, value: i16) -> std::io::Result<()> {
-        const BYTES: usize = std::mem::size_of::<i16>();
-        self.align_to(BYTES)?;
+        self.align_to(<i16 as WireFormatType>::ALIGNMENT)?;
         self.stream.write_i16::<T>(value)?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<i16>();
         Ok(())
     }
 
     pub(super) fn write_u32<T: ByteOrder>(&mut self, value: u32) -> std::io::Result<()> {
-        const BYTES: usize = std::mem::size_of::<u32>();
-        self.align_to(BYTES)?;
+        self.align_to(<u32 as WireFormatType>::ALIGNMENT)?;
         self.stream.write_u32::<T>(value)?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<u32>();
         Ok(())
     }
 
     pub(super) fn write_i32<T: ByteOrder>(&mut self, value: i32) -> std::io::Result<()> {
-        const BYTES: usize = std::mem::size_of::<i32>();
-        self.align_to(BYTES)?;
+        self.align_to(<i32 as WireFormatType>::ALIGNMENT)?;
         self.stream.write_i32::<T>(value)?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<i32>();
         Ok(())
     }
 
     pub(super) fn write_u64<T: ByteOrder>(&mut self, value: u64) -> std::io::Result<()> {
-        const BYTES: usize = std::mem::size_of::<u64>();
-        self.align_to(BYTES)?;
+        self.align_to(<u64 as WireFormatType>::ALIGNMENT)?;
         self.stream.write_u64::<T>(value)?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<u64>();
         Ok(())
     }
 
     pub(super) fn write_i64<T: ByteOrder>(&mut self, value: i64) -> std::io::Result<()> {
-        const BYTES: usize = std::mem::size_of::<i64>();
-        self.align_to(BYTES)?;
+        self.align_to(<i64 as WireFormatType>::ALIGNMENT)?;
         self.stream.write_i64::<T>(value)?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<i64>();
+        Ok(())
+    }
+
+    pub(super) fn write_f64<T: ByteOrder>(&mut self, value: f64) -> std::io::Result<()> {
+        self.align_to(<f64 as WireFormatType>::ALIGNMENT)?;
+        self.stream.write_f64::<T>(value)?;
+        self.offset += std::mem::size_of::<f64>();
         Ok(())
     }
 

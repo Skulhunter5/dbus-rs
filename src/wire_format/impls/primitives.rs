@@ -158,3 +158,22 @@ impl WireFormatWrite for i64 {
         writer.write_i64::<T>(*self)
     }
 }
+
+impl WireFormatType for f64 {
+    const ALIGNMENT: usize = std::mem::size_of::<f64>();
+}
+
+impl WireFormatRead for f64 {
+    fn read_from<T: ByteOrder, R: Read>(reader: &mut MessageReader<R>) -> std::io::Result<Self> {
+        reader.read_f64::<T>()
+    }
+}
+
+impl WireFormatWrite for f64 {
+    fn write_to<T: ByteOrder, W: Write>(
+        &self,
+        writer: &mut MessageWriter<W>,
+    ) -> std::io::Result<()> {
+        writer.write_f64::<T>(*self)
+    }
+}

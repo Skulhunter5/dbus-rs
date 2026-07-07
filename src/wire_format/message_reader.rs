@@ -2,7 +2,7 @@ use std::{io::Read, os::unix::net::UnixStream};
 
 use byteorder::{ByteOrder, ReadBytesExt as _};
 
-use crate::wire_format::{StringLengthType, WireFormatRead};
+use crate::wire_format::{StringLengthType, WireFormatRead, WireFormatType};
 
 #[derive(Debug)]
 pub struct MessageReader<'a, R: Read> {
@@ -42,7 +42,8 @@ impl<'a, R: Read> MessageReader<'a, R> {
     }
 
     pub fn read_body(mut self, length: usize) -> std::io::Result<Vec<u8>> {
-        self.align_to(8)?;
+        const BODY_ALIGNMENT: usize = 8;
+        self.align_to(BODY_ALIGNMENT)?;
         let mut body = vec![0u8; length];
         self.stream.read_exact(&mut body)?;
         self.offset += length;
@@ -62,55 +63,56 @@ impl<'a, R: Read> MessageReader<'a, R> {
 
     pub(super) fn read_u8(&mut self) -> std::io::Result<u8> {
         let res = self.stream.read_u8()?;
-        self.offset += 1;
+        self.offset += std::mem::size_of::<u8>();
         Ok(res)
     }
 
     pub(super) fn read_u16<T: ByteOrder>(&mut self) -> std::io::Result<u16> {
-        const BYTES: usize = std::mem::size_of::<u16>();
-        self.align_to(BYTES)?;
+        self.align_to(<u16 as WireFormatType>::ALIGNMENT)?;
         let res = self.stream.read_u16::<T>()?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<u16>();
         Ok(res)
     }
 
     pub(super) fn read_i16<T: ByteOrder>(&mut self) -> std::io::Result<i16> {
-        const BYTES: usize = std::mem::size_of::<i16>();
-        self.align_to(BYTES)?;
+        self.align_to(<i16 as WireFormatType>::ALIGNMENT)?;
         let res = self.stream.read_i16::<T>()?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<i16>();
         Ok(res)
     }
 
     pub(super) fn read_u32<T: ByteOrder>(&mut self) -> std::io::Result<u32> {
-        const BYTES: usize = std::mem::size_of::<u32>();
-        self.align_to(BYTES)?;
+        self.align_to(<u32 as WireFormatType>::ALIGNMENT)?;
         let res = self.stream.read_u32::<T>()?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<u32>();
         Ok(res)
     }
 
     pub(super) fn read_i32<T: ByteOrder>(&mut self) -> std::io::Result<i32> {
-        const BYTES: usize = std::mem::size_of::<i32>();
-        self.align_to(BYTES)?;
+        self.align_to(<i32 as WireFormatType>::ALIGNMENT)?;
         let res = self.stream.read_i32::<T>()?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<i32>();
         Ok(res)
     }
 
     pub(super) fn read_u64<T: ByteOrder>(&mut self) -> std::io::Result<u64> {
-        const BYTES: usize = std::mem::size_of::<u64>();
-        self.align_to(BYTES)?;
+        self.align_to(<u64 as WireFormatType>::ALIGNMENT)?;
         let res = self.stream.read_u64::<T>()?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<u64>();
         Ok(res)
     }
 
     pub(super) fn read_i64<T: ByteOrder>(&mut self) -> std::io::Result<i64> {
-        const BYTES: usize = std::mem::size_of::<i64>();
-        self.align_to(BYTES)?;
+        self.align_to(<i64 as WireFormatType>::ALIGNMENT)?;
         let res = self.stream.read_i64::<T>()?;
-        self.offset += BYTES;
+        self.offset += std::mem::size_of::<i64>();
+        Ok(res)
+    }
+
+    pub(super) fn read_f64<T: ByteOrder>(&mut self) -> std::io::Result<f64> {
+        self.align_to(<f64 as WireFormatType>::ALIGNMENT)?;
+        let res = self.stream.read_f64::<T>()?;
+        self.offset += std::mem::size_of::<f64>();
         Ok(res)
     }
 
