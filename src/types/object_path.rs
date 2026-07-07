@@ -29,7 +29,7 @@ impl ObjectPath {
     }
 
     fn validate(object_path: &str) -> Result<(), String> {
-        if Some(Self::SEPARATOR) != object_path.chars().next() {
+        if object_path.starts_with('/') {
             return Err(format!("has to start with {:?}", Self::SEPARATOR));
         };
         let object_path = &object_path[(Self::SEPARATOR.len_utf8())..];
@@ -67,7 +67,7 @@ impl<'a> TryFrom<&'a str> for ObjectPath {
     type Error = String;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Self::validate(&value).map(|_| Self(value.to_owned()))
+        Self::validate(value).map(|_| Self(value.to_owned()))
     }
 }
 

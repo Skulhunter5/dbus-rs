@@ -3,11 +3,13 @@ use std::io::{Read, Write};
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 
 mod endianness;
+mod field_code;
 mod flags;
 mod header_field;
 mod message_type;
 mod protocol_version;
 pub use endianness::Endianness;
+pub use field_code::FieldCode;
 pub use flags::Flags;
 pub use header_field::HeaderField;
 pub use message_type::MessageType;
@@ -19,17 +21,17 @@ use crate::wire_format::{MessageReader, MessageWriter};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Message {
-    endianness: Endianness,
-    ty: MessageType,
-    flags: Flags,
-    major_protocol_version: MajorProtocolVersion,
-    serial: u32,
-    header_fields: Vec<HeaderField>,
-    body: Vec<u8>,
+    pub endianness: Endianness,
+    pub ty: MessageType,
+    pub flags: Flags,
+    pub major_protocol_version: MajorProtocolVersion,
+    pub serial: u32,
+    pub header_fields: Vec<HeaderField>,
+    pub body: Vec<u8>,
 }
 
 impl Message {
-    pub(crate) fn read_from(mut reader: MessageReader<impl Read>) -> std::io::Result<Self> {
+    pub fn read_from(mut reader: MessageReader<impl Read>) -> std::io::Result<Self> {
         let endianness = reader.read::<LittleEndian, Endianness>()?;
         let ty = reader.read::<LittleEndian, MessageType>()?;
         let flags = reader.read::<LittleEndian, Flags>()?;
@@ -63,7 +65,7 @@ impl Message {
         })
     }
 
-    pub(crate) fn write_to(&self, mut writer: MessageWriter<impl Write>) -> std::io::Result<()> {
+    pub fn write_to(&self, mut writer: MessageWriter<impl Write>) -> std::io::Result<()> {
         writer.write::<LittleEndian, _>(self.endianness)?;
         writer.write::<LittleEndian, _>(self.ty)?;
         writer.write::<LittleEndian, _>(self.flags)?;

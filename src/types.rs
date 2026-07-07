@@ -1,6 +1,10 @@
 mod object_path;
 mod signature;
+mod type_code;
+mod value;
 mod variant;
 pub use object_path::ObjectPath;
 pub use signature::Signature;
+pub use type_code::TypeCode;
+pub use value::Value;
 pub use variant::Variant;

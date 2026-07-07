@@ -114,7 +114,7 @@ impl<'a, W: Write> MessageWriter<'a, W> {
     ) -> std::io::Result<()> {
         let string = string.as_ref();
 
-        self.write_u32::<T>(string.len() as u32)?;
+        self.write::<T, L>(L::from_usize(string.len()))?;
         self.write_bytes(string.as_bytes())?;
         self.write_byte(b'\0')?;
 

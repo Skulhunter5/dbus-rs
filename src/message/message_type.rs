@@ -21,7 +21,7 @@ impl WireFormatRead for MessageType {
         Self::try_from(reader.read::<T, u8>()?).map_err(|invalid_byte| {
             std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
-                format!("invalid header message type byte: {}", invalid_byte),
+                format!("invalid header message type: {}", invalid_byte),
             )
         })
     }

@@ -10,17 +10,26 @@ pub use message_writer::MessageWriter;
 
 trait StringLengthType: WireFormatType + WireFormatRead + WireFormatWrite {
     fn to_usize(&self) -> usize;
+    fn from_usize(value: usize) -> Self;
 }
 
 impl StringLengthType for u8 {
     fn to_usize(&self) -> usize {
         *self as usize
     }
+
+    fn from_usize(value: usize) -> Self {
+        value.try_into().unwrap()
+    }
 }
 
 impl StringLengthType for u32 {
     fn to_usize(&self) -> usize {
         *self as usize
+    }
+
+    fn from_usize(value: usize) -> Self {
+        value.try_into().unwrap()
     }
 }
 

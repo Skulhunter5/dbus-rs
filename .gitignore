@@ -1,2 +1,5 @@
 /target
 Cargo.lock
+
+fake-session-bus
+proxy-session-bus

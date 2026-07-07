@@ -44,7 +44,7 @@ impl<'a> TryFrom<&'a str> for InterfaceName {
     type Error = String;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        Self::validate(&value).map(|_| Self(value.to_owned()))
+        Self::validate(value).map(|_| Self(value.to_owned()))
     }
 }
 

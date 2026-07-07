@@ -1,12 +1,32 @@
 use crate::{
-    types::Signature,
+    types::{Signature, Value},
     wire_format::{WireFormatRead, WireFormatType, WireFormatWrite},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Variant {
     signature: Signature,
-    value: Vec<u8>,
+    value: Value,
+}
+
+impl Variant {
+    pub fn get_signature(&self) -> &Signature {
+        &self.signature
+    }
+
+    pub fn get_value(&self) -> &Value {
+        &self.value
+    }
+
+    pub fn into_value(self) -> Value {
+        self.value
+    }
+}
+
+impl From<Variant> for Value {
+    fn from(variant: Variant) -> Self {
+        variant.value
+    }
 }
 
 // TODO: make sure that this alignment is correct; i.e. that it's not supposed to be a struct and
@@ -20,8 +40,8 @@ impl WireFormatRead for Variant {
         reader: &mut crate::wire_format::MessageReader<R>,
     ) -> std::io::Result<Self> {
         let signature = reader.read::<T, Signature>()?;
-        let value = signature.read_value_bytes::<T>(reader)?;
-        todo!()
+        let value = signature.read_value::<T>(reader)?;
+        Ok(Self { signature, value })
     }
 }
 
@@ -31,6 +51,7 @@ impl WireFormatWrite for Variant {
         writer: &mut crate::wire_format::MessageWriter<W>,
     ) -> std::io::Result<()> {
         writer.write::<T, _>(&self.signature)?;
-        todo!();
+        self.value.write_to::<T>(writer)?;
+        Ok(())
     }
 }

@@ -1,7 +1,7 @@
 use crate::wire_format::{WireFormatRead, WireFormatType, WireFormatWrite};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct MajorProtocolVersion(u8);
+pub struct MajorProtocolVersion(pub u8);
 
 impl WireFormatType for MajorProtocolVersion {
     const ALIGNMENT: usize = std::mem::size_of::<u8>();
