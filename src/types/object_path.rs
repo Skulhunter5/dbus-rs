@@ -29,7 +29,7 @@ impl ObjectPath {
     }
 
     fn validate(object_path: &str) -> Result<(), String> {
-        if object_path.starts_with('/') {
+        if !object_path.starts_with("/") {
             return Err(format!("has to start with {:?}", Self::SEPARATOR));
         };
         let object_path = &object_path[(Self::SEPARATOR.len_utf8())..];
