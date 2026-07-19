@@ -1,7 +1,7 @@
 use std::{path::Path, thread, time::Duration};
 
 use dbus::{
-    Connection, InterfaceName, MemberName, PRINT,
+    Connection, InterfaceName, MemberName,
     message::{Endianness, Flags, HeaderField, MajorProtocolVersion, Message, MessageType},
     types::ObjectPath,
 };
@@ -20,9 +20,7 @@ fn main() {
 
     thread::sleep(Duration::from_millis(500));
 
-    if crate::PRINT {
-        println!("Connection established to {}", connection.server_guid());
-    }
+    println!("Connection established to {}", connection.server_guid());
 
     let header_fields = vec![
         HeaderField::Path(ObjectPath::try_from("/org/freedesktop/DBus").unwrap()),

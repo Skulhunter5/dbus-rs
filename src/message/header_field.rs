@@ -102,7 +102,18 @@ impl WireFormatRead for HeaderField {
                 )),
             },
             FieldCode::ErrorName => todo!(),
-            FieldCode::ReplySerial => todo!(),
+            FieldCode::ReplySerial => match value {
+                Value::U32(serial) => Ok(Self::ReplySerial(serial)),
+                incorrect_value => Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!(
+                        "incorrect value for header field {:?}: got {:?} but expected {:?}",
+                        field_code,
+                        incorrect_value,
+                        TypeCode::U32
+                    ),
+                )),
+            },
             FieldCode::Destination => match value {
                 Value::String(destination) => Ok(Self::Destination(destination)),
                 incorrect_value => Err(std::io::Error::new(
@@ -115,8 +126,30 @@ impl WireFormatRead for HeaderField {
                     ),
                 )),
             },
-            FieldCode::Sender => todo!(),
-            FieldCode::Signature => todo!(),
+            FieldCode::Sender => match value {
+                Value::String(sender) => Ok(Self::Sender(sender)),
+                incorrect_value => Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!(
+                        "incorrect value for header field {:?}: got {:?} but expected {:?}",
+                        field_code,
+                        incorrect_value,
+                        TypeCode::String
+                    ),
+                )),
+            },
+            FieldCode::Signature => match value {
+                Value::Signature(signature) => Ok(Self::Signature(signature)),
+                incorrect_value => Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!(
+                        "incorrect value for header field {:?}: got {:?} but expected {:?}",
+                        field_code,
+                        incorrect_value,
+                        TypeCode::Signature
+                    ),
+                )),
+            },
             FieldCode::UnixFds => todo!(),
         }
     }
