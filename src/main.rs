@@ -1,4 +1,4 @@
-use std::{path::Path, thread, time::Duration};
+use std::path::Path;
 
 use dbus::{
     Connection, InterfaceName, MemberName,
@@ -17,8 +17,6 @@ fn main() {
     };
     let mut connection =
         Connection::init(path).expect("failed to initialize connection to dbus session bus");
-
-    thread::sleep(Duration::from_millis(500));
 
     println!("Connection established to {}", connection.server_guid());
 
