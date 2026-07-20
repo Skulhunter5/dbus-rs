@@ -27,12 +27,12 @@ impl WireFormatWrite for String {
     }
 }
 
-impl WireFormatType for &str {
+impl WireFormatType for str {
     // because strings start with a u32 for the length
     const ALIGNMENT: usize = std::mem::size_of::<u32>();
 }
 
-impl WireFormatWrite for &str {
+impl WireFormatWrite for str {
     fn write_to<T: ByteOrder, W: Write>(
         &self,
         writer: &mut MessageWriter<W>,

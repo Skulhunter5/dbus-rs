@@ -2,7 +2,10 @@ use std::{io::Read, os::unix::net::UnixStream};
 
 use byteorder::{ByteOrder, ReadBytesExt as _};
 
-use crate::wire_format::{StringLengthType, WireFormatRead, WireFormatType};
+use crate::{
+    types::{Signature, Value},
+    wire_format::{StringLengthType, WireFormatRead, WireFormatType},
+};
 
 #[derive(Debug)]
 pub struct MessageReader<'a, R: Read> {
@@ -41,13 +44,38 @@ impl<'a, R: Read> MessageReader<'a, R> {
         E::read_from::<T, _>(self)
     }
 
-    pub fn read_body(mut self, length: usize) -> std::io::Result<Vec<u8>> {
+    pub fn read_body<T: ByteOrder>(
+        mut self,
+        signature: &Signature,
+        length: usize,
+    ) -> std::io::Result<Value> {
         const BODY_ALIGNMENT: usize = 8;
         self.align_to(BODY_ALIGNMENT)?;
-        let mut body = vec![0u8; length];
-        self.stream.read_exact(&mut body)?;
+
+        let start_offset = self.offset;
+
+        let mut bytes = vec![0u8; length];
+        self.stream.read_exact(&mut bytes)?;
         self.offset += length;
-        Ok(body)
+        let mut bytes = &bytes[..];
+
+        let mut body_reader = MessageReader {
+            stream: &mut bytes,
+            offset: start_offset,
+        };
+
+        let value =
+            signature
+                .read_value_from::<T>(&mut body_reader)
+                .map_err(|error| match error {
+                    x if x.kind() == std::io::ErrorKind::UnexpectedEof => std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "exceeded body length when reading the body",
+                    ),
+                    x => x,
+                })?;
+
+        Ok(value)
     }
 
     pub(super) fn read_bool<T: ByteOrder>(&mut self) -> std::io::Result<bool> {

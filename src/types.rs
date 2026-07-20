@@ -6,5 +6,5 @@ mod variant;
 pub use object_path::ObjectPath;
 pub use signature::Signature;
 pub use type_code::TypeCode;
-pub use value::Value;
+pub use value::{BorrowedValue, Value};
 pub use variant::Variant;

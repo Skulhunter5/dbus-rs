@@ -32,7 +32,7 @@ impl WireFormatWrite for MessageType {
         &self,
         writer: &mut crate::wire_format::MessageWriter<W>,
     ) -> std::io::Result<()> {
-        writer.write::<T, u8>(*self as u8)
+        writer.write::<T, u8>(&(*self as u8))
     }
 }
 

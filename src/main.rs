@@ -20,6 +20,19 @@ fn main() {
 
     println!("Connection established to {}", connection.server_guid());
 
+    call_hello(&mut connection);
+    println!();
+    // because the first thing after the reply to `Hello` we receive is a "NameAcquired" signal for
+    // ourselves, we first need to read one more message before being able to actually read the
+    // introspect response
+    print!("< ");
+    let message = connection.read_message().unwrap();
+    println!("{:?}", &message);
+    println!();
+    call_introspect(&mut connection);
+}
+
+fn call_hello(connection: &mut Connection) {
     let header_fields = vec![
         HeaderField::Path(ObjectPath::try_from("/org/freedesktop/DBus").unwrap()),
         HeaderField::Member(MemberName::try_from("Hello").unwrap().into()),
@@ -36,7 +49,37 @@ fn main() {
         flags: Flags::none(),
         major_protocol_version: MajorProtocolVersion(1),
         serial: 1,
-        body: vec![],
+        body: None,
+        header_fields,
+    };
+
+    print!("> {:?}", &message);
+    connection.write_message(&message).unwrap();
+    println!();
+
+    print!("< ");
+    let message = connection.read_message().unwrap();
+    println!("{:?}", &message);
+}
+
+fn call_introspect(connection: &mut Connection) {
+    let header_fields = vec![
+        HeaderField::Path(ObjectPath::try_from("/org/freedesktop/DBus").unwrap()),
+        HeaderField::Member(MemberName::try_from("Introspect").unwrap().into()),
+        HeaderField::Interface(
+            InterfaceName::try_from("org.freedesktop.DBus.Introspectable")
+                .unwrap()
+                .into(),
+        ),
+        HeaderField::Destination("org.freedesktop.DBus".to_owned()),
+    ];
+    let message = Message {
+        endianness: Endianness::LittleEndian,
+        ty: MessageType::MethodCall,
+        flags: Flags::none(),
+        major_protocol_version: MajorProtocolVersion(1),
+        serial: 2,
+        body: None,
         header_fields,
     };
 

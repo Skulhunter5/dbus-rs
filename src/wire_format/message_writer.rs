@@ -2,7 +2,11 @@ use std::{io::Write, os::unix::net::UnixStream};
 
 use byteorder::{ByteOrder, WriteBytesExt as _};
 
-use crate::wire_format::{StringLengthType, WireFormatType, WireFormatWrite};
+use crate::{
+    message::HeaderField,
+    types::{BorrowedValue, Value},
+    wire_format::{StringLengthType, WireFormatType, WireFormatWrite},
+};
 
 #[derive(Debug)]
 pub struct MessageWriter<'a, W: Write> {
@@ -37,7 +41,10 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         self.write_u8(value)
     }
 
-    pub fn write<T: ByteOrder, E: WireFormatWrite>(&mut self, value: E) -> std::io::Result<()> {
+    pub fn write<T: ByteOrder, E: WireFormatWrite + ?Sized>(
+        &mut self,
+        value: &E,
+    ) -> std::io::Result<()> {
         value.write_to::<T, _>(self)
     }
 
@@ -46,6 +53,32 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         self.align_to(BODY_ALIGNMENT)?;
         self.stream.write_all(body)?;
         self.offset += body.len();
+        Ok(())
+    }
+
+    pub fn write_message<T: ByteOrder>(
+        mut self,
+        serial: u32,
+        header_fields: &[HeaderField],
+        body: Option<&Value>,
+    ) -> std::io::Result<()> {
+        let mut buffer = Vec::new();
+        if let Some(body) = body {
+            let mut buffer_writer = MessageWriter {
+                stream: &mut buffer,
+                offset: 0,
+            };
+            body.write_to::<T>(&mut buffer_writer)?;
+        }
+        let bytes = &buffer;
+
+        self.write_u32::<T>(bytes.len() as u32)?;
+        self.write_u32::<T>(serial)?;
+        self.write::<T, [HeaderField]>(header_fields)?;
+        // align to 8-byte boundary after header
+        self.align_to(8)?;
+        self.write_bytes(bytes)?;
+
         Ok(())
     }
 
@@ -114,10 +147,34 @@ impl<'a, W: Write> MessageWriter<'a, W> {
     ) -> std::io::Result<()> {
         let string = string.as_ref();
 
-        self.write::<T, L>(L::from_usize(string.len()))?;
+        self.write::<T, L>(&L::from_usize(string.len()))?;
         self.write_bytes(string.as_bytes())?;
         self.write_byte(b'\0')?;
 
+        Ok(())
+    }
+
+    pub(crate) fn write_struct<T: ByteOrder>(
+        &mut self,
+        values: impl AsRef<[Value]>,
+    ) -> std::io::Result<()> {
+        // structs are always aligned to 8 bytes
+        self.align_to(8)?;
+        for value in values.as_ref() {
+            value.write_to::<T>(self)?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn write_borrowed_struct<T: ByteOrder>(
+        &mut self,
+        values: &[BorrowedValue],
+    ) -> std::io::Result<()> {
+        // structs are always aligned to 8 bytes
+        self.align_to(8)?;
+        for value in values {
+            value.write_to::<T>(self)?;
+        }
         Ok(())
     }
 

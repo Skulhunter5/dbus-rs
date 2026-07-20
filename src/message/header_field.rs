@@ -146,7 +146,7 @@ impl WireFormatRead for HeaderField {
                         "incorrect value for header field {:?}: got {:?} but expected {:?}",
                         field_code,
                         incorrect_value,
-                        TypeCode::Signature
+                        TypeCode::String
                     ),
                 )),
             },
@@ -162,18 +162,18 @@ impl WireFormatWrite for HeaderField {
     ) -> std::io::Result<()> {
         // header field has additional alignment restriction because it's a struct
         writer.align_to(Self::ALIGNMENT)?;
-        writer.write::<T, FieldCode>(self.field_code())?;
-        writer.write::<T, Signature>(self.signature())?;
+        writer.write::<T, FieldCode>(&self.field_code())?;
+        writer.write::<T, Signature>(&self.signature())?;
         match self {
-            Self::Path(value) => writer.write::<T, &ObjectPath>(value)?,
-            Self::Interface(value) => writer.write::<T, &str>(value)?,
-            Self::Member(value) => writer.write::<T, &str>(value)?,
-            Self::ErrorName(value) => writer.write::<T, &str>(value)?,
-            Self::ReplySerial(value) => writer.write::<T, &u32>(value)?,
-            Self::Destination(value) => writer.write::<T, &str>(value)?,
-            Self::Sender(value) => writer.write::<T, &str>(value)?,
-            Self::Signature(value) => writer.write::<T, &Signature>(value)?,
-            Self::UnixFds(value) => writer.write::<T, &u32>(value)?,
+            Self::Path(value) => writer.write::<T, ObjectPath>(value)?,
+            Self::Interface(value) => writer.write::<T, str>(value)?,
+            Self::Member(value) => writer.write::<T, str>(value)?,
+            Self::ErrorName(value) => writer.write::<T, str>(value)?,
+            Self::ReplySerial(value) => writer.write::<T, u32>(value)?,
+            Self::Destination(value) => writer.write::<T, str>(value)?,
+            Self::Sender(value) => writer.write::<T, str>(value)?,
+            Self::Signature(value) => writer.write::<T, Signature>(value)?,
+            Self::UnixFds(value) => writer.write::<T, u32>(value)?,
         }
         Ok(())
     }

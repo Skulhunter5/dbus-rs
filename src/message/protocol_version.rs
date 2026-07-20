@@ -20,7 +20,7 @@ impl WireFormatWrite for MajorProtocolVersion {
         &self,
         writer: &mut crate::wire_format::MessageWriter<W>,
     ) -> std::io::Result<()> {
-        writer.write::<T, u8>(self.0)
+        writer.write::<T, u8>(&self.0)
     }
 }
 

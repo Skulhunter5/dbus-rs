@@ -165,7 +165,7 @@ impl Signature {
         self.0.len() == 1
     }
 
-    pub fn read_value<T: ByteOrder>(
+    pub fn read_value_from<T: ByteOrder>(
         &self,
         reader: &mut MessageReader<impl std::io::Read>,
     ) -> std::io::Result<Value> {

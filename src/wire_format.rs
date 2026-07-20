@@ -8,6 +8,8 @@ mod message_writer;
 pub use message_reader::MessageReader;
 pub use message_writer::MessageWriter;
 
+use crate::types::{BorrowedValue, Signature, Value};
+
 trait StringLengthType: WireFormatType + WireFormatRead + WireFormatWrite {
     fn to_usize(&self) -> usize;
     fn from_usize(value: usize) -> Self;
@@ -51,11 +53,15 @@ impl StringLengthType for u32 {
 // this, the byteorder crate could probably be removed and everything be done by manually calling
 // `from_le_bytes` and `from_be_bytes` respectively
 
-pub trait WireFormatType: Sized {
+pub trait WireFormatType {
     const ALIGNMENT: usize;
+
+    fn get_signature() -> &'static Signature {
+        todo!();
+    }
 }
 
-pub trait WireFormatRead: WireFormatType {
+pub trait WireFormatRead: WireFormatType + Sized {
     fn read_from<T: ByteOrder, R: Read>(reader: &mut MessageReader<R>) -> std::io::Result<Self>;
 }
 
@@ -66,16 +72,38 @@ pub trait WireFormatWrite: WireFormatType {
     ) -> std::io::Result<()>;
 }
 
-impl<K: WireFormatType> WireFormatType for &K {
-    const ALIGNMENT: usize = K::ALIGNMENT;
+pub trait WireFormatStruct: Sized {
+    fn get_signature() -> &'static Signature;
+
+    fn construct(values: Box<[Value]>) -> std::io::Result<Self>;
+    fn deconstruct<'a>(&'a self) -> Box<[BorrowedValue<'a>]>;
 }
 
-impl<K: WireFormatWrite> WireFormatWrite for &K {
+impl<S: WireFormatStruct> WireFormatType for S {
+    // structs are always aligned to the full 8-byte boundary
+    const ALIGNMENT: usize = 8;
+
+    fn get_signature() -> &'static Signature {
+        <Self as WireFormatStruct>::get_signature()
+    }
+}
+
+impl<S: WireFormatStruct> WireFormatRead for S {
+    fn read_from<T: ByteOrder, R: Read>(reader: &mut MessageReader<R>) -> std::io::Result<Self> {
+        let value = Self::get_signature().read_value_from::<T>(reader)?;
+        let Value::Struct(values) = value else {
+            panic!("struct type doesn't have a struct signature");
+        };
+        Self::construct(values)
+    }
+}
+
+impl<S: WireFormatStruct> WireFormatWrite for S {
     fn write_to<T: ByteOrder, W: Write>(
         &self,
         writer: &mut MessageWriter<W>,
     ) -> std::io::Result<()> {
-        let k = *self;
-        k.write_to::<T, _>(writer)
+        let value = BorrowedValue::Struct(self.deconstruct());
+        value.write_to::<T>(writer)
     }
 }

@@ -26,12 +26,12 @@ impl<E: WireFormatWrite> WireFormatWrite for Vec<E> {
     }
 }
 
-impl<E: WireFormatType> WireFormatType for &[E] {
+impl<E: WireFormatType> WireFormatType for [E] {
     // because arrays start with a u32 for the length
     const ALIGNMENT: usize = std::mem::size_of::<u32>();
 }
 
-impl<E: WireFormatWrite> WireFormatWrite for &[E] {
+impl<E: WireFormatWrite> WireFormatWrite for [E] {
     fn write_to<T: ByteOrder, W: Write>(
         &self,
         writer: &mut MessageWriter<W>,

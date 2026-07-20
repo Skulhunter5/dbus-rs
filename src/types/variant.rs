@@ -40,7 +40,7 @@ impl WireFormatRead for Variant {
         reader: &mut crate::wire_format::MessageReader<R>,
     ) -> std::io::Result<Self> {
         let signature = reader.read::<T, Signature>()?;
-        let value = signature.read_value::<T>(reader)?;
+        let value = signature.read_value_from::<T>(reader)?;
         Ok(Self { signature, value })
     }
 }
