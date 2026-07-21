@@ -1,5 +1,7 @@
 /target
 Cargo.lock
 
+res/
+
 fake-session-bus
 proxy-session-bus
