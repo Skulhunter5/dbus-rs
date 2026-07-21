@@ -3,7 +3,6 @@ use std::{io::Write, os::unix::net::UnixStream};
 use byteorder::{ByteOrder, WriteBytesExt as _};
 
 use crate::{
-    message::HeaderField,
     types::{BorrowedValue, Value},
     wire_format::{StringLengthType, WireFormatType, WireFormatWrite},
 };
@@ -17,6 +16,15 @@ pub struct MessageWriter<'a, W: Write> {
 impl<'a> MessageWriter<'a, UnixStream> {
     pub fn new(stream: &'a mut UnixStream) -> Self {
         Self { stream, offset: 0 }
+    }
+}
+
+impl<'a> MessageWriter<'a, Vec<u8>> {
+    pub fn new_buffer_writer(buffer: &'a mut Vec<u8>) -> Self {
+        Self {
+            stream: buffer,
+            offset: 0,
+        }
     }
 }
 
@@ -53,32 +61,6 @@ impl<'a, W: Write> MessageWriter<'a, W> {
         self.align_to(BODY_ALIGNMENT)?;
         self.stream.write_all(body)?;
         self.offset += body.len();
-        Ok(())
-    }
-
-    pub fn write_message<T: ByteOrder>(
-        mut self,
-        serial: u32,
-        header_fields: &[HeaderField],
-        body: Option<&Value>,
-    ) -> std::io::Result<()> {
-        let mut buffer = Vec::new();
-        if let Some(body) = body {
-            let mut buffer_writer = MessageWriter {
-                stream: &mut buffer,
-                offset: 0,
-            };
-            body.write_to::<T>(&mut buffer_writer)?;
-        }
-        let bytes = &buffer;
-
-        self.write_u32::<T>(bytes.len() as u32)?;
-        self.write_u32::<T>(serial)?;
-        self.write::<T, [HeaderField]>(header_fields)?;
-        // align to 8-byte boundary after header
-        self.align_to(8)?;
-        self.write_bytes(bytes)?;
-
         Ok(())
     }
 

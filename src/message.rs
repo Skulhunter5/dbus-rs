@@ -47,18 +47,30 @@ impl Message {
             let length = reader.read::<T, u32>()?;
             let serial = reader.read::<T, u32>()?;
             let header_fields = reader.read::<T, Vec<HeaderField>>()?;
+            let body_bytes = reader.read_body(length as usize)?;
 
             let signature = header_fields.iter().find_map(|field| match field {
                 HeaderField::Signature(signature) => Some(signature),
                 _ => None,
             });
-            let body = if let Some(signature) = signature {
-                Some(reader.read_body::<T>(signature, length as usize)?)
-            } else {
-                None
-            };
+            if let Some(signature) = signature {
+                let mut body_bytes = &body_bytes[..];
+                let mut body_reader = MessageReader::new_buffer_reader(&mut body_bytes);
 
-            Ok((serial, header_fields, body))
+                let body_value = signature.read_value_from::<T>(&mut body_reader).map_err(
+                    |error| match error {
+                        x if x.kind() == std::io::ErrorKind::UnexpectedEof => std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            "exceeded body length when reading the body",
+                        ),
+                        x => x,
+                    },
+                )?;
+
+                Ok((serial, header_fields, Some(body_value)))
+            } else {
+                Ok((serial, header_fields, None))
+            }
         }
 
         let (serial, header_fields, body) = match endianness {
@@ -83,13 +95,35 @@ impl Message {
         writer.write::<LittleEndian, _>(&self.flags)?;
         writer.write::<LittleEndian, _>(&self.major_protocol_version)?;
 
+        fn inner_write<T: ByteOrder>(
+            mut writer: MessageWriter<impl Write>,
+            serial: u32,
+            header_fields: &[HeaderField],
+            body: Option<&Value>,
+        ) -> std::io::Result<()> {
+            let mut buffer = Vec::new();
+            if let Some(body) = body {
+                let mut buffer_writer = MessageWriter::new_buffer_writer(&mut buffer);
+                body.write_to::<T>(&mut buffer_writer)?;
+            }
+            let body_bytes = &buffer;
+
+            writer.write::<T, u32>(&(body_bytes.len() as u32))?;
+            writer.write::<T, u32>(&serial)?;
+            writer.write::<T, [HeaderField]>(header_fields)?;
+
+            writer.write_body(body_bytes)
+        }
+
         match self.endianness {
-            Endianness::LittleEndian => writer.write_message::<LittleEndian>(
+            Endianness::LittleEndian => inner_write::<LittleEndian>(
+                writer,
                 self.serial,
                 &self.header_fields,
                 self.body.as_ref(),
             ),
-            Endianness::BigEndian => writer.write_message::<BigEndian>(
+            Endianness::BigEndian => inner_write::<BigEndian>(
+                writer,
                 self.serial,
                 &self.header_fields,
                 self.body.as_ref(),

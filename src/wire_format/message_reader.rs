@@ -2,13 +2,10 @@ use std::{io::Read, os::unix::net::UnixStream};
 
 use byteorder::{ByteOrder, ReadBytesExt as _};
 
-use crate::{
-    types::{Signature, Value},
-    wire_format::{StringLengthType, WireFormatRead, WireFormatType},
-};
+use crate::wire_format::{StringLengthType, WireFormatRead, WireFormatType};
 
 #[derive(Debug)]
-pub struct MessageReader<'a, R: Read> {
+pub struct MessageReader<'a, R: Read + ?Sized> {
     pub(super) stream: &'a mut R,
     pub(super) offset: usize,
 }
@@ -16,6 +13,15 @@ pub struct MessageReader<'a, R: Read> {
 impl<'a> MessageReader<'a, UnixStream> {
     pub fn new(stream: &'a mut UnixStream) -> Self {
         Self { stream, offset: 0 }
+    }
+}
+
+impl<'a> MessageReader<'a, &'a [u8]> {
+    pub fn new_buffer_reader(buffer: &'a mut &'a [u8]) -> Self {
+        Self {
+            stream: buffer,
+            offset: 0,
+        }
     }
 }
 
@@ -44,38 +50,14 @@ impl<'a, R: Read> MessageReader<'a, R> {
         E::read_from::<T, _>(self)
     }
 
-    pub fn read_body<T: ByteOrder>(
-        mut self,
-        signature: &Signature,
-        length: usize,
-    ) -> std::io::Result<Value> {
+    pub fn read_body(mut self, length: usize) -> std::io::Result<Vec<u8>> {
         const BODY_ALIGNMENT: usize = 8;
         self.align_to(BODY_ALIGNMENT)?;
-
-        let start_offset = self.offset;
 
         let mut bytes = vec![0u8; length];
         self.stream.read_exact(&mut bytes)?;
         self.offset += length;
-        let mut bytes = &bytes[..];
-
-        let mut body_reader = MessageReader {
-            stream: &mut bytes,
-            offset: start_offset,
-        };
-
-        let value =
-            signature
-                .read_value_from::<T>(&mut body_reader)
-                .map_err(|error| match error {
-                    x if x.kind() == std::io::ErrorKind::UnexpectedEof => std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        "exceeded body length when reading the body",
-                    ),
-                    x => x,
-                })?;
-
-        Ok(value)
+        Ok(bytes)
     }
 
     pub(super) fn read_bool<T: ByteOrder>(&mut self) -> std::io::Result<bool> {
@@ -186,6 +168,13 @@ impl<'a, R: Read> MessageReader<'a, R> {
         while self.offset < end_offset {
             let element = E::read_from::<T, _>(self)?;
             array.push(element);
+        }
+
+        if self.offset > end_offset {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "exceeded array byte length while reading an array",
+            ));
         }
 
         Ok(array)
